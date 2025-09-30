@@ -3,3 +3,9 @@ C:\Users\Racunar1\Desktop\Ognjen\SCADA\dCom\Common\bin\Debug\Common.pdb
 C:\Users\Racunar1\Desktop\Ognjen\SCADA\dCom\Common\obj\Debug\Common.dll
 C:\Users\Racunar1\Desktop\Ognjen\SCADA\dCom\Common\obj\Debug\Common.pdb
 C:\Users\Racunar1\Desktop\Ognjen\SCADA\dCom\Common\obj\Debug\Common.csprojResolveAssemblyReference.cache
+C:\SestiSemestar\AUS\dcom-radna-verzija\dCom\Common\bin\Debug\Common.dll
+C:\SestiSemestar\AUS\dcom-radna-verzija\dCom\Common\bin\Debug\Common.pdb
+C:\SestiSemestar\AUS\dcom-radna-verzija\dCom\Common\obj\Debug\Common.csproj.AssemblyReference.cache
+C:\SestiSemestar\AUS\dcom-radna-verzija\dCom\Common\obj\Debug\Common.csproj.CoreCompileInputs.cache
+C:\SestiSemestar\AUS\dcom-radna-verzija\dCom\Common\obj\Debug\Common.dll
+C:\SestiSemestar\AUS\dcom-radna-verzija\dCom\Common\obj\Debug\Common.pdb

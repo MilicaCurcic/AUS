@@ -1,5 +1,6 @@
 ﻿using Common;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace ProcessingModule
@@ -29,6 +30,7 @@ namespace ProcessingModule
 			this.processingManager = processingManager;
             this.configuration = configuration;
             this.automationTrigger = automationTrigger;
+			this.delayBetweenCommands = configuration.DelayBetweenCommands;
         }
 
         /// <summary>
@@ -60,10 +62,119 @@ namespace ProcessingModule
 
 		private void AutomationWorker_DoWork()
 		{
-			//while (!disposedValue)
-			//{
-			//}
-		}
+			EGUConverter egu = new EGUConverter();
+
+			PointIdentifier L = new PointIdentifier(PointType.ANALOG_OUTPUT, 1000);
+			PointIdentifier STOP = new PointIdentifier(PointType.DIGITAL_OUTPUT, 2000);
+            PointIdentifier V1 = new PointIdentifier(PointType.DIGITAL_OUTPUT, 2002);
+            PointIdentifier P1 = new PointIdentifier(PointType.DIGITAL_OUTPUT, 2005);
+            PointIdentifier P2 = new PointIdentifier(PointType.DIGITAL_OUTPUT, 2006);
+            
+			List<PointIdentifier> pointList = new List<PointIdentifier> { L, STOP, V1, P1, P2};
+			int nivo_vode, stop, stanje_ventila, stanje_prekidaca1, stanje_prekidaca2;
+			int drainageLevel = 6000;
+			
+			while (!disposedValue)
+            {
+				List<IPoint> points = storage.GetPoints(pointList);
+
+				nivo_vode = (int)egu.ConvertToEGU(points[0].ConfigItem.ScaleFactor, points[0].ConfigItem.Deviation, points[0].RawValue);
+				stop = points[1].RawValue;
+				stanje_ventila = points[2].RawValue;
+				stanje_prekidaca1 = points[3].RawValue;
+				stanje_prekidaca2 = points[4].RawValue;
+				int inFlow;
+				int outFlow;
+
+				// ako je stop=1 prekidaci su iskluceni(0)
+				if(stop == 1)		
+				{
+					processingManager.ExecuteWriteCommand(points[3].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, P1.Address, 0);
+                    processingManager.ExecuteWriteCommand(points[4].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, P2.Address, 0);
+
+                }
+
+				//ako je stop=0 ventil je zatvoren(0)
+				if(stop == 0)
+				{
+                    processingManager.ExecuteWriteCommand(points[2].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, V1.Address, 0);
+
+                }
+
+				//kada su prekidaci iskljuceni nivo vode se ne menja
+				if(stanje_prekidaca1 == 0 && stanje_prekidaca2 == 0)
+				{
+					inFlow = 0;
+					nivo_vode += inFlow;
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+                }
+
+				//kada je prekidac2 ukljucen povecava se nivo vode za 80 litara u sekundi
+                if (stanje_prekidaca1 == 0 && stanje_prekidaca2 == 1)
+                {
+                    inFlow = 80;
+                    nivo_vode += inFlow;
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+
+                }
+
+				//kada je prekidac1 ukljucen povecava se nivo vode za 2x80 litara u sekundi
+                if (stanje_prekidaca1 == 1 && stanje_prekidaca2 == 0)
+                {
+                    inFlow = 160;
+                    nivo_vode += inFlow;
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+
+                }
+
+				//kada su oba prekidaca ukljucena povecava se za 3x80 litara u sekundi
+                if (stanje_prekidaca1 == 1 && stanje_prekidaca2 == 1)
+                {
+                    inFlow = 240;
+                    nivo_vode += inFlow;
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+
+                }
+
+				//kada nivo vode predje 3.5 metara aktivira se automatsko praznjenje
+				if(nivo_vode >= points[0].ConfigItem.HighLimit)
+				{
+					outFlow = 50;
+					stop = 1;
+					stanje_ventila = 1;
+					nivo_vode -= outFlow;
+                    processingManager.ExecuteWriteCommand(points[1].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, STOP.Address, stop);
+                    processingManager.ExecuteWriteCommand(points[2].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, V1.Address, stanje_ventila);
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+
+                }
+
+				//ako je ventil otvoren visina vode je veca od 2metra, a bazen se prazni
+				if(stanje_ventila == 1 && nivo_vode > drainageLevel)
+				{
+					outFlow = 50;
+					nivo_vode -= outFlow;
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+
+                }
+				//ako nivo vode padne ispod drainageLevela onda zatvaramo ventil
+				else if(stanje_ventila == 1 && nivo_vode <= drainageLevel)
+                {
+					stanje_ventila = 0;
+                    processingManager.ExecuteWriteCommand(points[2].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, V1.Address, stanje_ventila);
+
+                }
+				/*if (stanje_ventila == 1 && nivo_vode <= drainageLevel)
+                {
+                    outFlow = 50;
+                    nivo_vode -= outFlow;
+                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
+
+                }*/
+
+				automationTrigger.WaitOne();
+            }
+        }
 
 		#region IDisposable Support
 		private bool disposedValue = false; // To detect redundant calls
