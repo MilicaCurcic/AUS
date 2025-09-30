@@ -1,4 +1,5 @@
 ﻿using Common;
+using System.Runtime.CompilerServices;
 
 namespace ProcessingModule
 {
@@ -14,9 +15,55 @@ namespace ProcessingModule
         /// <param name="configItem">The configuration item.</param>
         /// <returns>The alarm indication.</returns>
 		public AlarmType GetAlarmForAnalogPoint(double eguValue, IConfigItem configItem)
-		{
-			return AlarmType.NO_ALARM;
+        {
+            if (CheckScope(eguValue, configItem))
+            {
+                if(CheckAlarm(eguValue, configItem) == 1)
+                {
+                    return AlarmType.HIGH_ALARM;
+                } 
+                else if(CheckAlarm(eguValue, configItem) == 0)
+                {
+                    return AlarmType.NO_ALARM;
+                } 
+                else
+                {
+                    return AlarmType.LOW_ALARM;
+                }
+            }  
+            else
+            {
+                return AlarmType.REASONABILITY_FAILURE;
+            }
 		}
+
+        private static bool CheckScope(double eguValue, IConfigItem configItem)
+        {
+            if(eguValue <= configItem.EGU_Min || eguValue >= configItem.EGU_Max)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public static int CheckAlarm(double eguValue, IConfigItem configItem)
+        {
+            if(eguValue >= configItem.HighLimit)
+            {
+                return 1;
+            } 
+            else if(eguValue <= configItem.LowLimit)
+            {
+                return -1;
+            } 
+            else
+            {
+                return 0;
+            }
+        } 
 
         /// <summary>
         /// Processes the alarm for digital point.
@@ -26,7 +73,14 @@ namespace ProcessingModule
         /// <returns>The alarm indication.</returns>
 		public AlarmType GetAlarmForDigitalPoint(ushort state, IConfigItem configItem)
 		{
-            return AlarmType.NO_ALARM;
+            if (state == configItem.AbnormalValue)
+            {
+                return AlarmType.ABNORMAL_VALUE;
+            }
+            else
+            {
+                return AlarmType.NO_ALARM;
+            }
         }
 	}
 }
