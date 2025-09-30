@@ -1,0 +1,8 @@
+# Visual Studio / IDE fajlovi
+.vs/
+*.suo
+*.user
+
+# Binarni i privremeni folderi
+[Bb]in/
+[Oo]bj/
