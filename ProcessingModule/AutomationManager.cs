@@ -164,13 +164,6 @@ namespace ProcessingModule
                     processingManager.ExecuteWriteCommand(points[2].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, V1.Address, stanje_ventila);
 
                 }
-				/*if (stanje_ventila == 1 && nivo_vode <= drainageLevel)
-                {
-                    outFlow = 50;
-                    nivo_vode -= outFlow;
-                    processingManager.ExecuteWriteCommand(points[0].ConfigItem, configuration.GetTransactionId(), configuration.UnitAddress, L.Address, nivo_vode);
-
-                }*/
 
 				automationTrigger.WaitOne();
             }
